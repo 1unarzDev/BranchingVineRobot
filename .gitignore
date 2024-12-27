@@ -2,4 +2,4 @@
 *.pio
 !.gitignore
 */.gitignore
-/Demo
+/demo
