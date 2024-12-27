@@ -1,6 +1,6 @@
 # Vine Robot Project
 
-This repository contains the code for an ongoing project aimed at creating branching vine robots for navigating complex environments.
+This repository contains the code for an ongoing project aimed at creating branching vine robots for navigating complex environments. The current implementation uses Python for illustrative purposes, but may be updated to C++ for performance improvements in the future.
 
 ## Checklist
 
