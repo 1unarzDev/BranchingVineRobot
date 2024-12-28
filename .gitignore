@@ -3,3 +3,6 @@
 !.gitignore
 */.gitignore
 /demo
+/build
+/install
+/log

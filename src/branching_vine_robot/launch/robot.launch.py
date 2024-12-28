@@ -5,7 +5,7 @@ import os
 
 # Define the nodes to be launched concurrently, use the entry points defined in setup.py
 def generate_launch_description():
-    pkg_share = launch_ros.substitutions.FindPackageShare(package='branching_vine_robots').find('branching_vine_robots')
+    pkg_share = launch_ros.substitutions.FindPackageShare(package='branching_vine_robot').find('branching_vine_robot')
 
     # camera_node = launch_ros.actions.Node(
     #     package='camera_ros',

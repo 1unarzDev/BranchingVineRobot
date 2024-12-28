@@ -22,8 +22,8 @@ setup(
     tests_require=["pytest"],
     entry_points={ # All scripts that run standalone should be here if run through the launch file
         'console_scripts': [
-            'state = branching_vine_robots.state:main',
-            'camera = branching_vine_robots.camera:main',
+            'state = branching_vine_robot.state:main',
+            'camera = branching_vine_robot.camera:main',
         ],
     }
 )
