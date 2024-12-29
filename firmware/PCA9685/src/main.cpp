@@ -15,7 +15,7 @@ int angleToPulse(int ang) {
     return pulse;
 }
 
-void loop(int motor) {
+void moveMotor(int motor) {
     pca9685.setPWM(motor, 0, angleToPulse((rand() - RAND_MAX / 2) * 2 / RAND_MAX ));
 }
 
