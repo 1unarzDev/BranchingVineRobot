@@ -31,7 +31,5 @@ void loop() {
         for (int i = 0; i < 15; i++) {
             board1.setPWM(i, 0, angleToPulse(angle));
         }
-        delay(50); // Allow servos to settle
     }
-    delay(500); // Pause before next sweep
 }
