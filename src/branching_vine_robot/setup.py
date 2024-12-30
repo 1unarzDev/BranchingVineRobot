@@ -23,6 +23,8 @@ setup(
     entry_points={ # All scripts that run standalone should be here if run through the launch file
         'console_scripts': [
             'state = branching_vine_robot.state:main',
+            'server = branching_vine_robot.server:main',
+            'cluster = branching_vine_robot.cluster:main'
         ],
     }
 )

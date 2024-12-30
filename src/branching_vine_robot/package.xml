@@ -3,7 +3,7 @@
 <package format="3">
   <name>branching_vine_robot</name>
   <version>0.0.0</version>
-  <description>ISEF Branching Vine Robot Code</description>
+  <description>Branching Vine Robot Code</description>
   <maintainer email="liambray_@outlook.com">root</maintainer>
   <license>MIT</license>
 
@@ -27,6 +27,7 @@
   <depend>matplotlib</depend>
   <depend>scikit-learn</depend>
   <depend>numpy</depend>
+  <depend>websockets</depend>
 
   <export>
     <build_type>ament_python</build_type>

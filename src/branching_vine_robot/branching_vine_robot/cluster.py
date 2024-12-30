@@ -41,7 +41,7 @@ class ClusterNode(Node):
         for label in unique_labels:
             if label == -1:
                 continue
-            cluster_points = points[clustering.labels == label]
+            cluster_points = points[clustering.labels_ == label]
             centroid = np.mean(cluster_points, axis=0)
             centroids.append(centroid)
             
@@ -54,8 +54,8 @@ class ClusterNode(Node):
 
 def main():
     rclpy.init()
-    publisher = ClusterNode()
-    rclpy.spin(publisher)
+    node = ClusterNode()
+    rclpy.spin(node)
 
 if __name__ == "__main__":
     main()

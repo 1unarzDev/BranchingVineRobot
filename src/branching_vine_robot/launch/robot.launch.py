@@ -6,7 +6,7 @@ import os
 def generate_launch_description():
     # Node for launching Intel RealSense d435 camera and start publishing rgbd info
     camera_node = launch_ros.actions.Node(
-        package='realsense2_camera ',
+        package='realsense2_camera',
         executable='realsense2_camera_node',
         parameters=[{
             'depth_module.depth_profile': '640x480x30',
@@ -19,11 +19,25 @@ def generate_launch_description():
     state_node = launch_ros.actions.Node(
         package='branching_vine_robot',
         executable='state',
-        name='state',
+        name='state'
+    )
+
+    cluster_node = launch_ros.actions.Node(
+        package='branching_vine_robot',
+        executable='cluster',
+        name='cluster'
+    )
+
+    server_node = launch_ros.actions.Node(
+        package='branching_vine_robot',
+        executable='server',
+        name='server'
     )
 
     # Standard launch file convention that creates a launch description using all nodes
     return launch.LaunchDescription([
         state_node,
-        camera_node
+        # camera_node,
+        cluster_node,
+        server_node
     ])
