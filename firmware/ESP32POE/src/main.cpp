@@ -1,52 +1,49 @@
+// Using Wireshark, it has been confirmed that this script is funtional
+// TODO: Automatically determine computer IP, receive IP from DHCP, improve packet data storage
+
 #include <ETH.h>
-#include <WebSocketsClient.h>
-#include <ESPmDNS.h>
+#include <WiFi.h>
 
-WebSocketsClient webSocket;
-const char* serverHostname = "server.local";
-const uint16_t serverPort = 8080;
-const char* uri = "/";
+const char* serverIP = "192.168.1.236"; 
+const int serverPort = 2718;
 
-void webSocketEvent(WStype_t type, uint8_t *payload, size_t length) {
-    if (type == WStype_BIN) {
-        Serial.print("Received binary data: ");
-        for (size_t i = 0; i < length; i++) {
-            Serial.printf("%02X ", payload[i]);
-        }
-        Serial.println();
-    }
+WiFiClient client;
+
+void sendData(const uint8_t* data, size_t length) {
+  if (client.connect(serverIP, serverPort)) {
+    Serial.println("Connected to server.");
+    client.write(data, length);
+    Serial.println("Data sent.");
+    client.stop();
+  } else {
+    Serial.println("Failed to connect to server.");
+  }
 }
 
 void setup() {
-    Serial.begin(115200);
-    ETH.begin();
+  Serial.begin(115200);
+  ETH.begin();
+  ETH.config(IPAddress(192, 168, 1, 100), IPAddress(192, 168, 1, 1), IPAddress(255, 255, 255, 0));
 
-    while (!ETH.linkUp()) {
-        delay(1000);
-        Serial.println("Waiting for Ethernet...");
-    }
+  // Wait for Ethernet connection
+  Serial.println("Waiting for Ethernet connection...");
+  while (!ETH.linkUp()) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nEthernet connected!");
 
-    if (!MDNS.begin("esp32")) {
-        Serial.println("Error starting mDNS");
-        while (1) delay(1000);
-    }
-
-    IPAddress serverIP = MDNS.queryHost(serverHostname);
-    if (serverIP == INADDR_NONE) {
-        Serial.println("Failed to resolve server hostname");
-        while (1) delay(1000);
-    }
-
-    webSocket.begin(serverIP.toString().c_str(), serverPort, uri);
-    webSocket.onEvent(webSocketEvent);
+  // Print the IP address
+  Serial.println("IP Address: " + ETH.localIP().toString());
 }
 
 void loop() {
-    webSocket.loop();
-    static uint32_t lastSendTime = 0;
-    if (millis() - lastSendTime > 2000) {
-        lastSendTime = millis();
-        uint8_t binaryData[] = {0x01, 0x02, 0x03, 0x04};
-        webSocket.sendBIN(binaryData, sizeof(binaryData));
-    }
+  // Collect your data
+  uint8_t data[] = {0x01, 0x02, 0x03, 0x04};
+  size_t dataLength = sizeof(data);
+
+  // Send the data
+  sendData(data, dataLength);
+
+  delay(1000); // Adjust delay as needed
 }
