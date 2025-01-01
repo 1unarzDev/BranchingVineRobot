@@ -1,4 +1,3 @@
-
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout, QMessageBox
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
@@ -19,59 +18,62 @@ class GUI(QMainWindow):
         # Add 3D and 2D tabs
         self.add_3d_tab()
         self.add_2d_tab()
-        
-def add_mouse_listeners(self):
-    # Loop through all tabs
-    for i in range(self.tabs.count()):
-        tab = self.tabs.widget(i)
-
-        # Find all VTK widgets in the tab
-        vtk_widgets = tab.findChildren(QVTKRenderWindowInteractor)
-        for vtk_widget in vtk_widgets:
-            interactor = vtk_widget.GetRenderWindow().GetInteractor()
-
-            # Add Mouse Event Observers
-            interactor.AddObserver("MouseMoveEvent", self.mouse_move_event)
-            interactor.AddObserver("LeftButtonPressEvent", self.left_click_event)
-
-def mouse_move_event(self, obj, event):
-    # Capture mouse position
-    x, y = obj.GetEventPosition()
-    print(f"Mouse moved to: ({x}, {y})")
-
-def left_click_event(self, obj, event):
-    # Capture mouse position on left click
-    x, y = obj.GetEventPosition()
-    print(f"Left click at: ({x}, {y})")
-
-    # Convert to world coordinates
-    renderer = obj.GetRenderWindow().GetRenderers().GetFirstRenderer()
-    picker = vtk.vtkPropPicker()
-    picker.Pick(x, y, 0, renderer)
-    world_pos = picker.GetPickPosition()
-    print(f"World coordinates: {world_pos}")
-
-    # Redraw
-    obj.GetRenderWindow().Render()
 
     def add_3d_tab(self):
         tab = QWidget()
         layout = QVBoxLayout()
 
-        # Create VTK Widget for 3D
+        # Create VTK Widget
         vtk_widget = QVTKRenderWindowInteractor(tab)
         layout.addWidget(vtk_widget)
         tab.setLayout(layout)
 
-        # Renderer and RenderWindow for 3D
+        # Renderer
         renderer = vtk.vtkRenderer()
         vtk_widget.GetRenderWindow().AddRenderer(renderer)
         interactor = vtk_widget.GetRenderWindow().GetInteractor()
+        interactor_style = vtk.vtkInteractorStyleTrackballCamera()
+        interactor.SetInteractorStyle(interactor_style)
+        
+        # Mouse click logic
+        def on_left_button_press(obj, event):
+            click_pos = interactor.GetEventPosition()
+            print(f"Mouse clicked at: {click_pos}")
+        interactor.AddObserver("LeftButtonPressEvent", on_left_button_press)
 
         # Example 3D object (sphere)
         sphere = vtk.vtkSphereSource()
+        sphere.SetRadius(1.0)
+        sphere.SetThetaResolution(50)
+        sphere.SetPhiResolution(50)
+        sphere.Update()  # Ensure the data is generated
+
+        # Create a scalar array and assign it to the sphere
+        scalars = vtk.vtkFloatArray()
+        scalars.SetNumberOfTuples(sphere.GetOutput().GetNumberOfPoints())
+
+        # Set scalar values based on the radius (or any other attribute)
+        for i in range(sphere.GetOutput().GetNumberOfPoints()):
+            scalars.SetValue(i, sphere.GetOutput().GetPoints().GetPoint(i)[2])  # Use the Z-coordinate for gradient
+
+        sphere.GetOutput().GetPointData().SetScalars(scalars)
+
+        # Create a color transfer function (gradient)
+        color_transfer_function = vtk.vtkColorTransferFunction()
+        color_transfer_function.AddRGBPoint(-1.0, 1.0, 0.0, 0.0)  # Red
+        color_transfer_function.AddRGBPoint(0.0, 0.0, 1.0, 0.0)   # Green
+        color_transfer_function.AddRGBPoint(1.0, 0.0, 0.0, 1.0)   # Blue
+
+        # Create a polydata mapper for the sphere
         mapper = vtk.vtkPolyDataMapper()
         mapper.SetInputConnection(sphere.GetOutputPort())
+
+        # Set the scalar range and color transfer function to the mapper
+        mapper.SetScalarRange(-1.0, 1.0)
+        mapper.SetColorModeToMapScalars()
+        mapper.SetLookupTable(color_transfer_function)
+
+        # Create an actor
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)
 
@@ -92,10 +94,16 @@ def left_click_event(self, obj, event):
         layout.addWidget(vtk_widget)
         tab.setLayout(layout)
 
-        # Renderer and RenderWindow for 2D
+        # Renderer
         renderer = vtk.vtkRenderer()
         vtk_widget.GetRenderWindow().AddRenderer(renderer)
         interactor = vtk_widget.GetRenderWindow().GetInteractor()
+        
+        # Mouse click logic
+        def on_left_button_press(obj, event):
+            click_pos = interactor.GetEventPosition()
+            print(f"Mouse clicked at: {click_pos}")
+        interactor.AddObserver("LeftButtonPressEvent", on_left_button_press)
 
         # Example 2D object (circle)
         circle = vtk.vtkRegularPolygonSource()
@@ -103,8 +111,32 @@ def left_click_event(self, obj, event):
         circle.SetRadius(1.0)
         circle.SetCenter(0.0, 0.0, 0.0)
 
+        # Create a PolyData object
+        polydata = circle.GetOutput()
+    
+        # Compute the distance from the center of the circle for each point
+        distances = vtk.vtkDoubleArray()
+        distances.SetName("Distance")
+        for i in range(polydata.GetNumberOfPoints()):
+            point = polydata.GetPoint(i)
+            distance = vtk.vtkMath.Distance2BetweenPoints(point, [0.0, 0.0, 0.0]) ** 0.5  # Euclidean distance
+            distances.InsertNextValue(distance)
+    
+        # Add distances as a scalar field to the polydata
+        polydata.GetPointData().AddArray(distances)
+        polydata.GetPointData().SetActiveScalars("Distance")
+    
+        # Create a color transfer function for the gradient
+        color_transfer_function = vtk.vtkColorTransferFunction()
+        color_transfer_function.AddRGBPoint(0.0, 1.0, 0.0, 0.0)   # Red for center (Distance = 0)
+        color_transfer_function.AddRGBPoint(1.0, 0.0, 1.0, 0.0)   # Green for edge (Distance = 1)
+    
+        # Create mapper and actor
         mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInputConnection(circle.GetOutputPort())
+        mapper.SetInputData(polydata)
+        mapper.SetScalarRange(0.0, 1.0)  # Set the range of the scalar values (min, max)
+        mapper.SetLookupTable(color_transfer_function)
+    
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)
 
@@ -121,13 +153,13 @@ def left_click_event(self, obj, event):
         # Add tab
         self.tabs.addTab(tab, "2D View")
 
-    # Detect Close Button Pressed
+    # Detect close button pressed
     def closeEvent(self, event):
         # Show confirmation dialog
         reply = QMessageBox.question(
             self,
-            'Exit Application',
-            'Are you sure you want to exit?',
+            'Quit Application',
+            'Are you sure you want to quit?',
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No
         )
@@ -138,12 +170,12 @@ def left_click_event(self, obj, event):
                 tab = self.tabs.widget(i)
                 vtk_widgets = tab.findChildren(QVTKRenderWindowInteractor)
                 for vtk_widget in vtk_widgets:
-                    # Finalize interactor and render window properly
+                    # Finalize interactor and render window 
                     render_window = vtk_widget.GetRenderWindow()
                     interactor = render_window.GetInteractor()
     
                     if interactor is not None:
-                        interactor.TerminateApp()  # Properly terminate interactor
+                        interactor.TerminateApp()  # Terminate interactor
                     render_window.Finalize()  # Finalize the render window
     
             event.accept()  # Close the application

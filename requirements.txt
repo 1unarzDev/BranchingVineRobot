@@ -1,4 +1,5 @@
 numpy==1.22.1
 scikit-learn==1.5.2
 websockets==14.1
-pygame==2.6.1
+pyqt5==5.15.11
+vtk==9.4.1
