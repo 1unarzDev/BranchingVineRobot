@@ -24,4 +24,3 @@ void setup() {
     pca9685.begin();
     pca9685.setPWMFreq(60); // Analog servos run at ~60 Hz updates
 }
-
