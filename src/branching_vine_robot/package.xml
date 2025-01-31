@@ -26,6 +26,7 @@
   <!-- Python dependencies -->
   <depend>matplotlib</depend>
   <depend>scikit-learn</depend>
+  <depend>pygame</depend>
   <depend>numpy</depend>
   <depend>websockets</depend>
 

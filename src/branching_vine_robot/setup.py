@@ -25,6 +25,7 @@ setup(
             'state = branching_vine_robot.state:main',
             'server = branching_vine_robot.server:main',
             'cluster = branching_vine_robot.cluster:main'
+            'gui = branching_vine_robot.gui:main'
         ],
     }
 )
