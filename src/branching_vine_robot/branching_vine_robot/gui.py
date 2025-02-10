@@ -1,8 +1,7 @@
+#!/usr/bin/env python3
+
 import rclpy
 from rclpy.node import Node
-import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits import mplot3d
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide" 
 import pygame
@@ -29,7 +28,7 @@ class Tabs(Enum):
 
 class GUI(Node):
     def __init__(self):
-        super.__init__("vine_robot_gui")
+        super().__init__("gui_node")
         
         pygame.init()
         
@@ -41,22 +40,6 @@ class GUI(Node):
         self.tab = 0
         self.run = True
         self.action = InteractState.PAN
-        
-        fig = plt.figure()
- 
-        # syntax for 3-D projection
-        ax = plt.axes(projection ='3d')
-         
-        # defining axes
-        z = np.linspace(0, 1, 100)
-        x = z * np.sin(25 * z)
-        y = z * np.cos(25 * z)
-        c = x + y
-        ax.scatter(x, y, z, c = c)
-         
-        # syntax for plotting
-        ax.set_title('3d Scatter plot geeks for geeks')
-        plt.show()
         
     def display_loop(self):
         if not self.run:
@@ -70,7 +53,7 @@ class GUI(Node):
             elif event.type == pygame.MOUSEBUTTONUP:
                 pos = pygame.mouse.get_pos()
             elif event.type == pygame.QUIT:
-                self.quit()
+                pygame.quit()
                 self.run = False
                 return
 
@@ -78,7 +61,7 @@ class GUI(Node):
         self.screen.fill(BACKGROUND_COLOR)
         
         # Draw text using a surface
-        font_surface = self.text.render(self.words, True, FONT_COLOR)    
+        font_surface = self.font.render(self.text, True, FONT_COLOR)    
         self.screen.blit(font_surface, (10, 10))
 
 class Branch():
@@ -111,7 +94,6 @@ def main(args=None):
         gui.get_logger().info("Shutting down")
     finally:
         gui.destroy_node()
-        rclpy.shutdown()()
     
 if __name__ == "__main__":
     main()

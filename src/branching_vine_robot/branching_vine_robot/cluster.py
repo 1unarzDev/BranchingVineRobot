@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Point
@@ -28,11 +30,7 @@ class ClusterNode(Node):
         depth_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
         
         # Flatten depth image to process with DBSCAN
-        y_indices, x_indices = np.indices(depth_image.shape)
-        self.points = np.column_stack((x_indices.ravel(), y_indices.ravel(), depth_image.ravel()))
-        self.points = self.points[~np.isnan(self.points[:, 2]) & (self.points[:, 2] > 0)]
-        
-        self.get_logger().info(self.points)
+        self.points = np.array(depth_image, dtype=np.uint16)*0.001
         
         # Apply DBSCAN clustering
         clustering = DBSCAN(eps=5, min_samples=10).fit(self.points)
@@ -57,7 +55,6 @@ class ClusterNode(Node):
 def main(args=None):
     rclpy.init(args=args)
     cluster_node = ClusterNode()
-    rclpy.spin(cluster_node)
 
     try:
         rclpy.spin(cluster_node)
@@ -65,7 +62,6 @@ def main(args=None):
         cluster_node.get_logger().info("Shutting down")
     finally:
         cluster_node.destroy_node()
-        rclpy.shutdown()
 
 if __name__ == "__main__":
     main()

@@ -54,7 +54,6 @@ async def main():
     except Exception as e:
         node.get_logger().error(f"WebSocket server error: {e}")
     finally:
-        rclpy.shutdown()
         executor.shutdown()
 
 if __name__ == "__main__":
