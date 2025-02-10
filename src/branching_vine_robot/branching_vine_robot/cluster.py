@@ -29,33 +29,43 @@ class ClusterNode(Node):
         
         # Flatten depth image to process with DBSCAN
         y_indices, x_indices = np.indices(depth_image.shape)
-        points = np.column_stack((x_indices.ravel(), y_indices.ravel(), depth_image.ravel()))
-        points = points[~np.isnan(points[:, 2]) & (points[:, 2] > 0)]
+        self.points = np.column_stack((x_indices.ravel(), y_indices.ravel(), depth_image.ravel()))
+        self.points = self.points[~np.isnan(self.points[:, 2]) & (self.points[:, 2] > 0)]
+        
+        self.get_logger().info(self.points)
         
         # Apply DBSCAN clustering
-        clustering = DBSCAN(eps=5, min_samples=10).fit(points)
+        clustering = DBSCAN(eps=5, min_samples=10).fit(self.points)
 
         # Find cluster centroids
         unique_labels = set(clustering.labels_)
-        centroids = []
+        self.centroids = []
         for label in unique_labels:
             if label == -1:
                 continue
-            cluster_points = points[clustering.labels_ == label]
+            cluster_points = self.points[clustering.labels_ == label]
             centroid = np.mean(cluster_points, axis=0)
-            centroids.append(centroid)
+            self.centroids.append(centroid)
             
-        for centroid in centroids:
+        for centroid in self.centroids:
             point_msg = Point()
             point_msg.x = centroid[0]
             point_msg.y = centroid[1]
             point_msg.z = centroid[2]
             self.cluster_publisher.publish(point_msg)
 
-def main():
-    rclpy.init()
-    node = ClusterNode()
-    rclpy.spin(node)
+def main(args=None):
+    rclpy.init(args=args)
+    cluster_node = ClusterNode()
+    rclpy.spin(cluster_node)
+
+    try:
+        rclpy.spin(cluster_node)
+    except KeyboardInterrupt:
+        cluster_node.get_logger().info("Shutting down")
+    finally:
+        cluster_node.destroy_node()
+        rclpy.shutdown()
 
 if __name__ == "__main__":
     main()

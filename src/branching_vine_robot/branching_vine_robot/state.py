@@ -26,8 +26,8 @@ class State(Node):
     def branch_state():
         return    
 
-def main():
-    rclpy.init()
+def main(args=None):
+    rclpy.init(args=args)
     
 if __name__ == "__main__":
     main()

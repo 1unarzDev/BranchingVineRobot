@@ -101,8 +101,8 @@ class Vec3():
         return Vec3((self.x + o.x) / 2, (self.y + o.y) / 2, (self.z + o.z) / 2)
     
 
-def main():
-    rclpy.init()
+def main(args=None):
+    rclpy.init(args=args)
     gui = GUI()
     
     try:
