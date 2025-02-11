@@ -36,33 +36,30 @@ class GUI(Node):
         self.font = pygame.font.SysFont(FONT, FONT_SIZE)
         self.text = ""
         
-        self.display_timer = self.create_timer(0, self.display_loop)
         self.tab = 0
-        self.run = True
         self.action = InteractState.PAN
         
-    def display_loop(self):
-        if not self.run:
-            return
+        self.display()
         
-        # Event handler, TODO: incorporate different functionality for each tab
-        for event in pygame.event.get():
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_2:
-                    self.tab = 2
-            elif event.type == pygame.MOUSEBUTTONUP:
-                pos = pygame.mouse.get_pos()
-            elif event.type == pygame.QUIT:
-                pygame.quit()
-                self.run = False
-                return
+    def display(self):
+        while(rclpy.ok()):
+            # Event handler, TODO: incorporate different functionality for each tab
+            for event in pygame.event.get():
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_2:
+                        self.tab = 2
+                elif event.type == pygame.MOUSEBUTTONUP:
+                    pos = pygame.mouse.get_pos()
+                elif event.type == pygame.QUIT:
+                    pygame.quit()
+                    break
 
-        # Clear canvas for new drawing
-        self.screen.fill(BACKGROUND_COLOR)
-        
-        # Draw text using a surface
-        font_surface = self.font.render(self.text, True, FONT_COLOR)    
-        self.screen.blit(font_surface, (10, 10))
+            # Clear canvas for new drawing
+            self.screen.fill(BACKGROUND_COLOR)
+            
+            # Draw text using a surface
+            font_surface = self.font.render(self.text, True, FONT_COLOR)    
+            self.screen.blit(font_surface, (10, 10))
 
 class Branch():
     def __init__(self, basePos):

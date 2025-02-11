@@ -26,7 +26,8 @@ setup(
             'server = branching_vine_robot.server:main',
             'cluster = branching_vine_robot.cluster:main',
             'gui = branching_vine_robot.gui:main',
-            'plot = branching_vine_robot.plot:main'
+            'plot = branching_vine_robot.plot:main',
+            'pneumatics = branching_vine_robot.pneumatics:main'
         ],
     }
 )

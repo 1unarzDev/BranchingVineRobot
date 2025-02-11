@@ -11,7 +11,7 @@ from concurrent.futures import ThreadPoolExecutor
 class WebSocketNode(Node):
     def __init__(self):
         super().__init__('websocket_node')
-        self.publisher = self.create_publisher(String, 'esp32/sensor_data', 10)
+        self.publisher = self.create_publisher(String, 'bno055', 10)
 
     def publish_sensor_data(self, data):
         msg = String()

@@ -63,5 +63,5 @@ def generate_launch_description():
         server_node,
         gui_node,
         plot_node,
-        shutdown_on_exit
+        # shutdown_on_exit
     ])
