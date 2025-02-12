@@ -1,5 +1,5 @@
-import branching_vine_robot.controller
-import branching_vine_robot.kinematics
+import branching_vine_robot.utils.controller
+import branching_vine_robot.utils.kinematics
 import rclpy
 from rclpy.node import Node
 

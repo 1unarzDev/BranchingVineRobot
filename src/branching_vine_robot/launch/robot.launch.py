@@ -3,6 +3,7 @@ import launch_ros
 import launch_ros.actions
 from launch.actions import RegisterEventHandler
 from launch.event_handlers import OnProcessExit
+from branching_vine_robot.config import *
 
 # Define the nodes to be launched concurrently, use the entry points defined in setup.py
 def generate_launch_description():
@@ -42,12 +43,6 @@ def generate_launch_description():
         name='gui'
     )
 
-    plot_node = launch_ros.actions.Node(
-        package='branching_vine_robot',
-        executable='plot',
-        name='plot'
-    )
-
     shutdown_on_exit = RegisterEventHandler(
         event_handler=OnProcessExit(
             target_action=state_node,
@@ -62,6 +57,5 @@ def generate_launch_description():
         cluster_node,
         server_node,
         gui_node,
-        plot_node,
-        # shutdown_on_exit
+        shutdown_on_exit
     ])
