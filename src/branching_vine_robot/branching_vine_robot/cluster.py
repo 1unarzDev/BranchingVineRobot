@@ -3,6 +3,7 @@
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image, CameraInfo, PointCloud2, PointField
+from geometry_msgs.msg import Point
 import numpy as np
 from sklearn.cluster import DBSCAN
 from cv_bridge import CvBridge
@@ -11,6 +12,7 @@ import struct
 
 from branching_vine_robot.utils.helper import get_angle_2d
 from branching_vine_robot.config import *
+# from interfaces import Cluster
 
 class ClusterNode(Node):
     def __init__(self):
@@ -18,12 +20,13 @@ class ClusterNode(Node):
 
         # Publisher to publish cluster centroids
         self.cluster_publisher = self.create_publisher(
-            PointCloud2, "/sensors/camera/points", 10
+            PointCloud2, "/cluster/clusters", 10
         )
     
         self.depth_subscriber = self.create_subscription(
             Image, '/camera/camera/depth/image_rect_raw', self.depth_callback, 10
         )
+
         self.info_subscriber = self.create_subscription(
             CameraInfo, '/camera/camera/depth/camera_info', self.camera_info_callback, 10
         )
@@ -65,6 +68,26 @@ class ClusterNode(Node):
         self.cluster_publisher.publish(point_cloud)
         self.get_logger().info(f"Published {len(points)} points")
 
+        # # Apply DBSCAN clustering
+        # clustering = DBSCAN(eps=5, min_samples=10).fit(self.points)
+
+        # # Find cluster centroids
+        # unique_labels = set(clustering.labels_)
+        # self.centroids = []
+        # for label in unique_labels:
+        #     if label == -1:
+        #         continue
+        #     cluster_points = self.points[clustering.labels_ == label]
+        #     centroid = np.mean(cluster_points, axis=0)
+        #     self.centroids.append(centroid)
+        #     
+        # for centroid in self.centroids:
+        #     point_msg = Point()
+        #     point_msg.x = centroid[0]
+        #     point_msg.y = centroid[1]
+        #     point_msg.z = centroid[2]
+        #     self.cluster_publisher.publish(point_msg)
+
     def arr_to_point_cloud(self, points):
         """ Convert numpy array to PointCloud2 message. """
         msg = PointCloud2()
@@ -88,27 +111,6 @@ class ClusterNode(Node):
         msg.data = b''.join([struct.pack('fff', *p) for p in points])
 
         return msg
-
-        
-        # # Apply DBSCAN clustering
-        # clustering = DBSCAN(eps=5, min_samples=10).fit(self.points)
-
-        # # Find cluster centroids
-        # unique_labels = set(clustering.labels_)
-        # self.centroids = []
-        # for label in unique_labels:
-        #     if label == -1:
-        #         continue
-        #     cluster_points = self.points[clustering.labels_ == label]
-        #     centroid = np.mean(cluster_points, axis=0)
-        #     self.centroids.append(centroid)
-        #     
-        # for centroid in self.centroids:
-        #     point_msg = Point()
-        #     point_msg.x = centroid[0]
-        #     point_msg.y = centroid[1]
-        #     point_msg.z = centroid[2]
-        #     # self.cluster_publisher.publish(point_msg)
 
 def main(args=None):
     rclpy.init(args=args)
