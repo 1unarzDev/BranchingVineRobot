@@ -14,7 +14,7 @@ def main(args=None):
     try:
         rclpy.spin(pneumatics_node)
     except KeyboardInterrupt:
-        pneumatics_node.get_logger().info("Shutting down")
+        pneumatics_node.get_logger().info("Pneumatic control node shutting down")
     finally:
         pneumatics_node.destroy_node()
 

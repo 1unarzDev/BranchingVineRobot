@@ -53,7 +53,7 @@ def main(args=None):
     try:
         rclpy.spin(state)
     except KeyboardInterrupt:
-        state.get_logger().info("Shutting down")
+        state.get_logger().info("State machine node shutting down")
     finally:
         state.destroy_node()
     

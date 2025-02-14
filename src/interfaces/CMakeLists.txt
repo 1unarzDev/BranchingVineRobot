@@ -7,11 +7,17 @@ endif()
 
 find_package(ament_cmake REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
+find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(builtin_interfaces REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
     "msg/Cluster.msg"
-    DEPENDENCIES geometry_msgs
+    "msg/DepthClustered.msg"
+    "msg/Goal.msg"
+    DEPENDENCIES 
+        "geometry_msgs" 
+        "std_msgs"
 )
 
 ament_export_dependencies(rosidl_default_runtime)

@@ -12,9 +12,9 @@ def generate_launch_description():
         package='realsense2_camera',
         executable='realsense2_camera_node',
         parameters=[{
-            'depth_module.depth_profile': '640x480x30',
-            'depth_module.infra_profile': '640x480x30',
-            'rgb_camera.color_profile': '1280x720x30'
+            'depth_module.depth_profile': f'{DEPTH_WIDTH}x{DEPTH_HEIGHT}x{CAM_FPS}',
+            'depth_module.infra_profile': f'{DEPTH_WIDTH}x{DEPTH_HEIGHT}x{CAM_FPS}',
+            'rgb_camera.color_profile': f'{RGB_WIDTH}x{RGB_HEIGHT}x{CAM_FPS}'
         }]
     )
 
@@ -52,10 +52,10 @@ def generate_launch_description():
     
     # Standard launch file convention that creates a launch description using all nodes
     return launch.LaunchDescription([
-        state_node,
+        # state_node,
         camera_node,
         cluster_node,
-        server_node,
+        # server_node,
         gui_node,
-        shutdown_on_exit
+        # shutdown_on_exit
     ])
