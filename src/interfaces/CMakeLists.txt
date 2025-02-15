@@ -12,8 +12,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(builtin_interfaces REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
-    "msg/Cluster.msg"
-    "msg/DepthClustered.msg"
+    "msg/Clusters.msg"
     "msg/Goal.msg"
     DEPENDENCIES 
         "geometry_msgs" 

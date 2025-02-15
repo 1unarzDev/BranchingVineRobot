@@ -3,7 +3,7 @@
 import rclpy
 from rclpy.node import Node
 import branching_vine_robot.config as config
-from interfaces.msg import DepthClustered, Goal
+from interfaces.msg import Clusters, Goal
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 
@@ -25,20 +25,6 @@ SCREEN_HEIGHT = 720
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
-def id_to_color(cluster_id, seed=42):
-    """
-    Maps a cluster ID to a unique RGB color.
-    
-    Args:
-        cluster_id (int): The unique cluster ID.
-        seed (int): A fixed seed for color consistency.
-    
-    Returns:
-        tuple: (R, G, B) color.
-    """
-    random.seed(cluster_id + seed)  # Ensure consistency across frames
-    return (random.randint(50, 255), random.randint(50, 255), random.randint(50, 255))
-
 class InteractState(Enum):
     PATH = 0
     PAN = 1
@@ -57,7 +43,7 @@ class GUI(Node):
         )
 
         self.cluster_subscriber = self.create_subscription(
-            DepthClustered, "/depth/clusters", self.cluster_callback, 10
+            Clusters, "/depth/clusters", self.cluster_callback, 10
         )
         
         self.depth_subscriber = self.create_subscription(
@@ -96,15 +82,15 @@ class GUI(Node):
         self.screen.blit(font_surface, (10, 10))
 
         for i in range(len(self.centroids_x)):
-            pygame.draw.circle(self.screen, id_to_color(self.labels[i]), (self.centroids_x[i], self.centroids_y[i]), 10)
+            pygame.draw.circle(self.screen, (0, 0, 0), (self.x[i], self.y[i]), 10)
 
         pygame.display.flip()
 
 
     def cluster_callback(self, msg):
-        self.centroids_x = msg.centroid_x
-        self.centroids_y = msg.centroid_y
-        self.labels = msg.labels
+        self.x = msg.x
+        self.y = msg.y
+        self.sizes = msg.sizes
 
     def display(self):
         # Event handler, TODO: incorporate different functionality for each tab
@@ -121,8 +107,6 @@ class GUI(Node):
             elif event.type == pygame.QUIT:
                 pygame.quit()
                 break
-
-        
 
         pygame.display.update()
 

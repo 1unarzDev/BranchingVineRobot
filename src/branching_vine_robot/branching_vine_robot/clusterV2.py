@@ -2,27 +2,21 @@
 
 import rclpy
 from rclpy.node import Node
-from sensor_msgs.msg import Image, CameraInfo, PointCloud2, PointField
+from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import Point
 import numpy as np
 import hdbscan
 from concurrent.futures import ThreadPoolExecutor
 from cv_bridge import CvBridge
 
-from branching_vine_robot.utils.helper import get_angle_2d
 from branching_vine_robot.config import *
-from interfaces.msg import Cluster
+from interfaces.msg import Clusters
 
 class ClusterNode(Node):
     def __init__(self):
         super().__init__("cluster_node")
-
-        self.point_publisher = self.create_publisher(
-            PointCloud2, "/depth/points", 10
-        )
-
         self.cluster_publisher = self.create_publisher(
-            Point, "/depth/clusters", 10
+            Clusters, "/depth/clusters", 10
         )
     
         self.depth_subscriber = self.create_subscription(
@@ -46,9 +40,17 @@ class ClusterNode(Node):
     def cluster(self):
         clustering = hdbscan.HDBSCAN(min_cluster_size=1000).fit(self.points)
         unique_labels = np.unique(clustering.labels_)
-        centroids = np.array([self.points[clustering.labels_ == lbl].mean(axis=0) for lbl in unique_labels if lbl != -1])
-    
-        return centroids
+        
+        centroids = []
+        sizes = []
+        
+        for lbl in unique_labels:
+            if lbl != -1:  # Ignore noise points
+                cluster_points = self.points[clustering.labels_ == lbl]
+                centroids.append(cluster_points.mean(axis=0))  # Compute centroid
+                sizes.append(len(cluster_points))  # Compute cluster size
+
+        return np.array(centroids, dtype=np.float32), sizes
 
     def depth_callback(self, msg):
         """ Convert depth image to a 3D point cloud. """
@@ -70,53 +72,21 @@ class ClusterNode(Node):
         valid_indices = np.nonzero((z > 0) & (z < DIST_THRESHOLD))
         self.points = np.column_stack((x[valid_indices], y[valid_indices], z[valid_indices]))
 
-        # Convert to PointCloud2 message
-        point_cloud = self.arr_to_point_cloud(self.points)
-        self.point_publisher.publish(point_cloud)
-        
-        self.get_logger().info(f"Published {len(self.points)} points")
-
         # Run clustering in parallel
         with ThreadPoolExecutor() as executor:
             future = executor.submit(self.cluster)
-            centroids = future.result()
+            centroids, sizes = future.result()
     
-        # Publish centroids
-        for centroid in centroids:
-            point_msg = Point()
-            point_msg.x, point_msg.y, point_msg.z = centroid
-            self.cluster_publisher.publish(point_msg)
-            
-            # cluster_msg = Cluster()
-            # cluster_msg.center = point_msg
-            # cluster_msg.stamp = self.get_clock().now().nanoseconds / (10 ** 9)
-            # cluster_msg.size = len(cluster_points)
+        self.get_logger().info(f"{centroids[:, 0]}")
 
-            self.cluster_publisher.publish(point_msg)
-
-    def arr_to_point_cloud(self, points):
-        """ Convert numpy array to PointCloud2 message. """
-        msg = PointCloud2()
-        msg.header.stamp = self.get_clock().now().to_msg()
-        msg.header.frame_id = "camera_link" 
-
-        msg.height = 1
-        msg.width = len(points)
-        msg.is_dense = False
-        msg.is_bigendian = False
-        msg.point_step = 12  # 4 bytes per float32 x, y, z
-        msg.row_step = msg.point_step * len(points)
-
-        msg.fields = [
-            PointField(name='x', offset=0, datatype=PointField.FLOAT32, count=1),
-            PointField(name='y', offset=4, datatype=PointField.FLOAT32, count=1),
-            PointField(name='z', offset=8, datatype=PointField.FLOAT32, count=1),
-        ]
-
-        # Pack points into binary format
-        msg.data = np.array(points, dtype=np.float32).tobytes()
-
-        return msg
+        # Publish centroids and sizes
+        clusters_msg = Clusters()
+        clusters_msg.x = centroids[:, 0].tolist()
+        clusters_msg.y = centroids[:, 1].tolist()
+        clusters_msg.z = centroids[:, 2].tolist()
+        clusters_msg.sizes = sizes
+        
+        self.cluster_publisher.publish(clusters_msg)
 
 def main(args=None):
     rclpy.init(args=args)
