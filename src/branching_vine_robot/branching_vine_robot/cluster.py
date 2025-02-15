@@ -6,8 +6,8 @@ from sensor_msgs.msg import Image
 
 import numpy as np
 from scipy.spatial import distance
-from collections import deque
 from branching_vine_robot.config import DIST_THRESHOLD
+from collections import deque
 
 class ClusterNode(Node):
     def __init__(self):
@@ -26,21 +26,18 @@ class ClusterNode(Node):
 
     def depth_callback(self, msg):
         self.depth_map = self.bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough") / 1000.0
-        
-        self.depth_map[(self.depth_map <= 0) | (self.depth_map > DIST_THRESHOLD)] = 0
+        self.depth_map = np.where((self.depth_map <= 0) | (self.depth_map > DIST_THRESHOLD), 0, self.depth_map)
 
         self.labels, self.clusters = grid_dbscan_tracker(self.depth_map, self.clusters)
 
         cluster_msg = DepthClustered()
-        cluster_msg.height, cluster_msg.width = self.depth_map.shape
-        cluster_msg.depths = self.depth_map.flatten().tolist()
         cluster_msg.labels = self.labels.flatten().tolist()
-        cluster_msg.centroid_x = [int(x) for x, y in self.clusters.values()]
-        cluster_msg.centroid_y = [int(y) for x, y in self.clusters.values()]
+        values = [(int(x), int(y)) for x, y in self.clusters.values()]
+        cluster_msg.centroid_x, cluster_msg.centroid_y = zip(*values) if values else ([], [])
 
         self.cluster_publisher.publish(cluster_msg)
 
-def grid_dbscan_tracker(depth_map, prev_clusters, eps=0.1, min_samples=50, max_movement=5):
+def grid_dbscan_tracker(depth_map, prev_clusters, eps=0.4, min_samples=100, max_movement=15):
     """
     Perform Grid-DBSCAN clustering on a depth map and track clusters across frames.
     
@@ -69,19 +66,17 @@ def grid_dbscan_tracker(depth_map, prev_clusters, eps=0.1, min_samples=50, max_m
         return neighbors
 
     def expand_cluster(i, j, cluster_id):
-        """Flood-fill to expand a cluster"""
-        queue = [(i, j)]
+        queue = deque([(i, j)])
         cluster_points = [(i, j)]
-        labels[i, j] = cluster_id  # Mark as part of cluster
-
+        labels[i, j] = cluster_id
+    
         while queue:
-            ci, cj = queue.pop()
+            ci, cj = queue.popleft()
             for ni, nj in get_neighbors(ci, cj):
                 if labels[ni, nj] == -1 and abs(depth_map[ni, nj] - depth_map[ci, cj]) < eps:
                     labels[ni, nj] = cluster_id
                     cluster_points.append((ni, nj))
                     queue.append((ni, nj))
-
         return cluster_points
 
     # Run DBSCAN-like clustering
@@ -98,20 +93,21 @@ def grid_dbscan_tracker(depth_map, prev_clusters, eps=0.1, min_samples=50, max_m
     # Compute centroids of detected clusters
     def compute_centroids():
         """Compute centroids of clusters"""
-        cluster_sums = {}
-        cluster_counts = {}
+        valid_points = labels >= 0
+        y_indices, x_indices = np.where(valid_points)
+        cluster_labels = labels[valid_points]
+        
+        centroid_sums = np.zeros((cluster_id + 1, 2), dtype=np.float64)
+        cluster_counts = np.zeros(cluster_id + 1, dtype=int)
+        
+        np.add.at(centroid_sums, cluster_labels, np.stack([x_indices, y_indices], axis=1))
+        np.add.at(cluster_counts, cluster_labels, 1)
 
-        for i in range(height):
-            for j in range(width):
-                label = labels[i, j]
-                if label >= 0:  # Valid cluster
-                    if label not in cluster_sums:
-                        cluster_sums[label] = np.array([0, 0])
-                        cluster_counts[label] = 0
-                    cluster_sums[label] += np.array([i, j])
-                    cluster_counts[label] += 1
+        valid_mask = cluster_counts > 0
+        centroids = np.zeros_like(centroid_sums, dtype=np.float64)
+        centroids[valid_mask] = centroid_sums[valid_mask] / cluster_counts[valid_mask, None]
 
-        return {label: (sums / cluster_counts[label]) for label, sums in cluster_sums.items()}
+        return {i: tuple(centroids[i]) for i in range(cluster_id)}
 
     new_centroids = compute_centroids()
 
@@ -143,13 +139,15 @@ def grid_dbscan_tracker(depth_map, prev_clusters, eps=0.1, min_samples=50, max_m
     # Create a mapping from old cluster IDs to new ones
     id_map = {}
     
-    # Assign old IDs to new clusters where possible
+    next_cluster_id = max(prev_clusters.keys(), default=0) + 1
+    
     for new_id, centroid in updated_clusters.items():
         if new_id in prev_clusters:
             id_map[new_id] = new_id  # Keep the same ID
         else:
-            id_map[new_id] = max(prev_clusters.keys(), default=0) + 1  # Assign new unique ID
-    
+            id_map[new_id] = next_cluster_id
+            next_cluster_id += 1  # Increment for new clusters
+
     # Update labels based on the corrected id_map
     for i in range(height):
         for j in range(width):

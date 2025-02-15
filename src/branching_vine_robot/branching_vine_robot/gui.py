@@ -4,6 +4,8 @@ import rclpy
 from rclpy.node import Node
 import branching_vine_robot.config as config
 from interfaces.msg import DepthClustered, Goal
+from sensor_msgs.msg import Image
+from cv_bridge import CvBridge
 
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide" 
@@ -11,14 +13,15 @@ import pygame
 from enum import Enum
 import numpy as np
 import random
+import cv2
 
 # Constants
 FONT_SIZE = 40
 FONT = "Segoe UI Medium"
 FONT_COLOR = "black"
 BACKGROUND_COLOR = "white"
-SCREEN_WIDTH = config.RGB_WIDTH
-SCREEN_HEIGHT = config.RGB_HEIGHT
+SCREEN_WIDTH = 1280
+SCREEN_HEIGHT = 720
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
@@ -36,30 +39,6 @@ def id_to_color(cluster_id, seed=42):
     random.seed(cluster_id + seed)  # Ensure consistency across frames
     return (random.randint(50, 255), random.randint(50, 255), random.randint(50, 255))
 
-
-def depth_to_color(depth, min_depth, max_depth):
-    """
-    Maps depth values to a blue-to-red gradient.
-    
-    Args:
-        depth (float): The depth value.
-        min_depth (float): Minimum depth in range.
-        max_depth (float): Maximum depth in range.
-    
-    Returns:
-        tuple: (R, G, B) color mapped to depth.
-    """
-    # Normalize depth to range [0, 1]
-    normalized = (depth - min_depth) / (max_depth - min_depth)
-    normalized = max(0, min(1, normalized))  # Clamp between 0 and 1
-
-    # Convert to RGB using a blue-to-red colormap
-    r = int(255 * normalized)         # Red increases with depth
-    g = 0
-    b = int(255 * (1 - normalized))   # Blue decreases with depth
-
-    return (r, g, b)
-
 class InteractState(Enum):
     PATH = 0
     PAN = 1
@@ -76,33 +55,57 @@ class GUI(Node):
         self.goal_publisher = self.create_publisher(
             Goal, "/control/goal", 10
         )
-        
-        self.depth_subscriber = self.create_subscription(
-            DepthClustered, "/depth/clusters", self.depth_callback, 10
+
+        self.cluster_subscriber = self.create_subscription(
+            DepthClustered, "/depth/clusters", self.cluster_callback, 10
         )
         
-        self.display_timer = self.create_timer(0, self.display)
+        self.depth_subscriber = self.create_subscription(
+            Image, '/camera/camera/depth/image_rect_raw', self.depth_callback, 10
+        )
         
-        self.depths = np.array([])
-        self.labels = np.array([])
+        self.bridge = CvBridge()
+        self.display_timer = self.create_timer(0, self.display)
+        self.centroids_x, self.centroids_y = np.array([]), np.array([])
 
         self.tab = 0
         self.action = InteractState.PAN
 
         pygame.init()
-        
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         self.font = pygame.font.SysFont(FONT, FONT_SIZE)
-        self.text = ""
+        self.text = "Test"
 
-        self.depths, self.labels, self.centroids_x, self.centroids_y = [], [], [], []
-        
     def depth_callback(self, msg):
-        self.depths = np.array(msg.depths).reshape(msg.height, msg.width)
-        self.labels = np.array(msg.labels).reshape(msg.height, msg.width)
+        # Convert ROS Image message to NumPy array
+        depth_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
+
+        # Normalize depth image for visualization (convert to 8-bit grayscale)
+        depth_image = np.nan_to_num(depth_image)  # Replace NaNs with 0
+        depth_image = np.clip(depth_image, 0, 5000)  # Clip depth values to 5m for visualization
+        depth_image = (255 * (depth_image / np.max(depth_image))).astype(np.uint8)  # Normalize to 0-255
+
+        # Convert to a Pygame surface
+        depth_surface = pygame.surfarray.make_surface(cv2.applyColorMap(cv2.convertScaleAbs(depth_image.T, alpha = 1), cv2.COLORMAP_JET))
+
+        # Display in pygame
+        self.screen.blit(pygame.transform.scale(depth_surface, (SCREEN_WIDTH, SCREEN_HEIGHT)), (0, 0))
+
+        # Draw text using a surface
+        font_surface = self.font.render(self.text, True, FONT_COLOR)    
+        self.screen.blit(font_surface, (10, 10))
+
+        for i in range(len(self.centroids_x)):
+            pygame.draw.circle(self.screen, id_to_color(self.labels[i]), (self.centroids_x[i], self.centroids_y[i]), 10)
+
+        pygame.display.flip()
+
+
+    def cluster_callback(self, msg):
         self.centroids_x = msg.centroid_x
         self.centroids_y = msg.centroid_y
-        
+        self.labels = msg.labels
+
     def display(self):
         # Event handler, TODO: incorporate different functionality for each tab
         for event in pygame.event.get():
@@ -114,46 +117,14 @@ class GUI(Node):
                 
                 goal_msg = Goal(x=pos[0], y=pos[1])
 
-                self.goal_publisher().publish(goal_msg)
+                self.goal_publisher.publish(goal_msg)
             elif event.type == pygame.QUIT:
                 pygame.quit()
                 break
 
-        # Clear canvas for new drawing
-        self.screen.fill(BACKGROUND_COLOR)
+        
 
-        for i in range(len(self.depths)):
-            for j in range(len(self.depths[i])):
-                    pygame.draw.circle(self.screen, depth_to_color(self.depths[i][j], 0, 2), (j, i), 1)
-                
-        for i in range(len(self.centroids_x)):
-            pygame.draw.circle(self.screen, (0, 0, 0), (self.centroids_x[i], self.centroids_y[i]), 2)
-        
-        # Draw text using a surface
-        font_surface = self.font.render(self.text, True, FONT_COLOR)    
-        self.screen.blit(font_surface, (10, 10))
-        
         pygame.display.update()
-
-class Branch():
-    def __init__(self, basePos):
-        self.base = basePos
-
-class Vec3():
-    def __init__(self, x, y, z):
-        self.x = x
-        self.y = y
-        self.z = z
-        
-    def __add__(self, o):
-        return Vec3(self.x + o.x, self.y + o.y, self.z + o.z)
-
-    def __mul__(self, o):
-        return
-    
-    def mdpt(self, o):
-        return Vec3((self.x + o.x) / 2, (self.y + o.y) / 2, (self.z + o.z) / 2)
-    
 
 def main(args=None):
     rclpy.init(args=args)
