@@ -1,34 +1,30 @@
 #include <Arduino.h>
+#include <SPI.h>
 #include <Wire.h>
+#include <Adafruit_PWMServoDriver.h>
 
-#define MUX_Address 0x70 // TCA9548A Encoders address
+Adafruit_PWMServoDriver pca9685 = Adafruit_PWMServoDriver(0x40); // PCA9685 default I2C address
 
-void selectI2CChannels(uint8_t i) {
-  if (i > 7) return;
-  Wire.beginTransmission(MUX_Address);
-  Wire.write(1 << i);
-  Wire.endTransmission();
+#define SERVOMIN 102  // Minimum pulse length
+#define SERVOMAX 512  // Maximum pulse length
+
+void moveMotor(int motor, int angle) {
+  int pulse = map(angle, 0, 180, SERVOMIN, SERVOMAX); // Map angle to corresponding pulse length
+  pca9685.setPWM(motor, 0, pulse); // Set PWM signal on correct pin on motor controller 
 }
 
 void setup() {
-    Serial.begin(9600);
-    while (!Serial);  // Wait for serial connection (for Leonardo & Micro)
-    Serial.println("I2C Scanner running...");
-
-    Wire.begin();
+  Serial.begin(115200); // Baud rate, match with ini file
+  pca9685.begin();
+  pca9685.setPWMFreq(50); // Servo communication frequency
 }
 
+int angle = 0;
 void loop() {
-    Serial.println("Scanning for I2C devices...");
-    
-    for (byte address = 3; address <= 0x77; address++) {
-        Wire.beginTransmission(address);
-        if (Wire.endTransmission() == 0) {  // No error = device found
-            Serial.print("Found device at 0x");
-            Serial.println(address, HEX);
-        }
-    }
-    
-    Serial.println("Scan complete.\n");
-    delay(5000);  // Wait 5 seconds before scanning again
+  if (Serial.available()) {
+    angle = Serial.parseInt();
+    moveMotor(0, angle);
+    Serial.print("Turned to angle ");
+    Serial.println(angle);
+  }
 }
