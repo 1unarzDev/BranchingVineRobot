@@ -39,7 +39,7 @@ class Cluster(Node):
         xy_points = points[:, :2]  
     
         # Run DBSCAN
-        dbscan = DBSCAN(eps=15, min_samples=40)
+        dbscan = DBSCAN(eps=10, min_samples=1000)
         labels = dbscan.fit_predict(xy_points)
         
         # Extract unique cluster labels (ignore noise, labeled as -1)

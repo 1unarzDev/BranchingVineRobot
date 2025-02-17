@@ -6,7 +6,7 @@ from interfaces.msg import Clusters, Goal
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 
-from branching_vine_robot.config import MAX_DEPTH, MIN_DEPTH
+from branching_vine_robot.config import MAX_DEPTH, MIN_DEPTH, DEPTH_HEIGHT, DEPTH_WIDTH
 
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide" 
@@ -20,8 +20,8 @@ FONT_SIZE = 40
 FONT = "Segoe UI Medium"
 FONT_COLOR = "black"
 BACKGROUND_COLOR = "white"
-SCREEN_WIDTH = 1280
-SCREEN_HEIGHT = 720
+SCREEN_WIDTH = DEPTH_WIDTH
+SCREEN_HEIGHT = DEPTH_HEIGHT
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
@@ -89,7 +89,8 @@ class GUI(Node):
 
         # Normalize depth image for visualization (convert to 8-bit grayscale)
         depth_image = np.nan_to_num(depth_image)  # Replace NaNs with 0
-        depth_image = np.clip(depth_image, 0, 5000)  # Clip depth values to 5m for visualization
+        # Change 0 to MIN_DEPTH to show clipping used in clustering algorithm
+        depth_image = np.clip(depth_image, 0, MAX_DEPTH)  # Clip depth values to 5m for visualization
         depth_image = (255 * (depth_image / np.max(depth_image))).astype(np.uint8)  # Normalize to 0-255
 
         # Convert to a Pygame surface
