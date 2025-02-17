@@ -25,7 +25,7 @@ setup(
             'control = branching_vine_robot.control:main',
             'server = branching_vine_robot.server:main',
             'gui = branching_vine_robot.gui:main',
-            'cluster = branching_vine_robot.clustering.clusterV4:main'
+            'cluster = branching_vine_robot.clustering.clusterV5:main'
         ],
     }
 )

@@ -4,7 +4,7 @@ from sensor_msgs.msg import Image
 from interfaces.msg import Clusters
 from cv_bridge import CvBridge
 
-from branching_vine_robot.config import DIST_THRESHOLD
+from branching_vine_robot.config import MIN_DEPTH, MAX_DEPTH
 
 import numpy as np
 from sklearn.cluster import KMeans
@@ -25,23 +25,49 @@ class Cluster(Node):
         
     def depth_callback(self, msg):
         depth_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
-        
-        # Convert image from array of depths to flat array of coordinattes
+    
+        # Downsample for speed
+        stride = 2
         h, w = depth_image.shape
-        x_coords, y_coords = np.meshgrid(np.arange(w), np.arange(h))
-        points = np.column_stack((x_coords.ravel(), y_coords.ravel(), depth_image.ravel()))
-        
-        # Filter values
-        valid_points = (~np.isnan(points[:, 2])) & (points[:, 2] > 0) & (points[:, 2] < DIST_THRESHOLD)
-        
-        kmeans = KMeans(n_clusters=3, random_state=42, n_init=10)
-        kmeans.fit(valid_points)
-        
+        x_coords, y_coords = np.meshgrid(np.arange(0, w, stride), np.arange(0, h, stride))
+        points = np.column_stack((x_coords.ravel(), y_coords.ravel(), depth_image[::stride, ::stride].ravel()))
+    
+        # Filter only valid depth values
+        valid_mask = (MIN_DEPTH <= points[:, 2]) & (points[:, 2] <= MAX_DEPTH)
+        filtered_points = points[valid_mask]
+    
+        # Ensure we have valid points
+        if len(filtered_points) == 0:
+            self.get_logger().warn("No valid points for clustering.")
+            return
+    
+        # Use only (x, y) for clustering
+        xy_points = filtered_points[:, :2]
+    
+        n_clusters = 10
+    
+        kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
+        kmeans.fit(xy_points)
+    
+        labels = kmeans.labels_
+    
+        # Compute mean depth per cluster (vectorized)
+        cluster_counts = np.bincount(labels, minlength=n_clusters)
+        mean_depths = np.bincount(labels, weights=filtered_points[:, 2], minlength=n_clusters) / np.maximum(cluster_counts, 1)
+    
+        # Replace NaN values in depth with MIN_DEPTH
+        mean_depths = np.nan_to_num(mean_depths, nan=MIN_DEPTH)
+    
+        # Combine cluster centers with mean depths
+        centroids = np.column_stack((kmeans.cluster_centers_, mean_depths))
+    
+        # Prepare and publish message
         clusters_msg = Clusters()
-        clusters_msg.x, clusters_msg.y, clusters_msg.z = kmeans.cluster_centers_.T
-        clusters_msg.sizes = np.bincount(kmeans.labels_)
-        
+        clusters_msg.x, clusters_msg.y, clusters_msg.z = centroids.T.astype(np.float32).tolist()
+        clusters_msg.sizes = cluster_counts.tolist()
+    
         self.cluster_publisher.publish(clusters_msg)
+        self.get_logger().info(f"Published points - x: {clusters_msg.x}, y: {clusters_msg.y}, z: {clusters_msg.z}, sizes: {clusters_msg.sizes}")
 
 def main(args=None):
     rclpy.init(args=args)
@@ -50,7 +76,7 @@ def main(args=None):
     try:
         rclpy.spin(cluster_node)
     except KeyboardInterrupt:
-        cluster_node.get_logger().info("State machine node shutting down")
+        cluster_node.get_logger().info("Cluster node shutting down")
     finally:
         cluster_node.destroy_node()
     

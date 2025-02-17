@@ -55,7 +55,7 @@ def generate_launch_description():
         camera_node,
         cluster_node,
         # server_node,
-        # gui_node,
+        gui_node,
         # control_node,
         shutdown_on_exit
     ])

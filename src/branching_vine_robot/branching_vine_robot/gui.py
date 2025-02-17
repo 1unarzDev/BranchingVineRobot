@@ -6,6 +6,8 @@ from interfaces.msg import Clusters, Goal
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 
+from branching_vine_robot.config import MAX_DEPTH, MIN_DEPTH
+
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide" 
 import pygame
@@ -29,6 +31,30 @@ class InteractState(Enum):
 class Tabs(Enum):
     PATH = 0
 
+def depth_to_color(depth, min_depth, max_depth):
+    """
+    Maps a depth value to an RGB color where:
+    - Min depth (close) → Green (0, 255, 0)
+    - Max depth (far) → Pink (255, 105, 180)
+    
+    Parameters:
+    - depth: float, the depth value to map
+    - min_depth: float, the minimum depth value (close range)
+    - max_depth: float, the maximum depth value (far range)
+    
+    Returns:
+    - tuple (R, G, B) with values between 0 and 255
+    """
+    # Normalize depth to range [0, 1]
+    norm = np.clip((depth - min_depth) / (max_depth - min_depth), 0, 1)
+    
+    # Interpolate between Green (0,255,0) and Pink (255,105,180)
+    r = int(255 * norm + 0 * (1 - norm))  # From 0 → 255
+    g = int(105 * norm + 255 * (1 - norm))  # From 255 → 105
+    b = int(180 * norm + 0 * (1 - norm))  # From 0 → 180
+
+    return (r, g, b)
+
 class GUI(Node):
     def __init__(self):
         super().__init__("gui_node")
@@ -47,9 +73,9 @@ class GUI(Node):
         
         self.bridge = CvBridge()
         self.display_timer = self.create_timer(0, self.display)
-        self.centroids_x, self.centroids_y = np.array([]), np.array([])
+        self.x, self.y, self.z, self.sizes = np.array([]), np.array([]), np.array([]), np.array([])
 
-        self.tab = 0
+        self.tab = Tabs.PATH
         self.action = InteractState.PLOT
 
         pygame.init()
@@ -76,15 +102,15 @@ class GUI(Node):
         font_surface = self.font.render(self.text, True, FONT_COLOR)    
         self.screen.blit(font_surface, (10, 10))
 
-        for i in range(len(self.centroids_x)):
-            pygame.draw.circle(self.screen, (0, 0, 0), (self.x[i], self.y[i]), 10)
+        for i in range(len(self.x)):
+            pygame.draw.circle(self.screen, depth_to_color(self.z[i], 0, MAX_DEPTH), (self.x[i], self.y[i]), self.sizes[i] / 40)
 
         pygame.display.flip()
-
 
     def cluster_callback(self, msg):
         self.x = msg.x
         self.y = msg.y
+        self.z = msg.z
         self.sizes = msg.sizes
 
     def display(self):
@@ -94,15 +120,13 @@ class GUI(Node):
                     self.tab = 2
             elif event.type == pygame.MOUSEBUTTONUP:
                 pos = pygame.mouse.get_pos()
-                
                 goal_msg = Goal(x=pos[0], y=pos[1])
-
                 self.goal_publisher.publish(goal_msg)
             elif event.type == pygame.QUIT:
                 pygame.quit()
+                self.get_logger().info("GUI shutting down")
+                self.destroy_node()
                 break
-
-        pygame.display.update()
 
 def main(args=None):
     rclpy.init(args=args)
@@ -113,6 +137,7 @@ def main(args=None):
     except KeyboardInterrupt:
         gui.get_logger().info("GUI shutting down")
     finally:
+        pygame.quit()
         gui.destroy_node()
     
 if __name__ == "__main__":
