@@ -19,10 +19,10 @@ def generate_launch_description():
     )
 
     # Start state machine
-    state_node = launch_ros.actions.Node(
+    control_node = launch_ros.actions.Node(
         package='branching_vine_robot',
-        executable='state',
-        name='state',
+        executable='control',
+        name='control',
     )
 
     cluster_node = launch_ros.actions.Node(
@@ -45,17 +45,17 @@ def generate_launch_description():
 
     shutdown_on_exit = RegisterEventHandler(
         event_handler=OnProcessExit(
-            target_action=state_node,
+            target_action=control_node,
             on_exit=[launch.actions.EmitEvent(event=launch.events.Shutdown())]
         )
     )
     
     # Standard launch file convention that creates a launch description using all nodes
     return launch.LaunchDescription([
-        # state_node,
         camera_node,
         cluster_node,
         # server_node,
-        gui_node,
-        # shutdown_on_exit
+        # gui_node,
+        # control_node,
+        shutdown_on_exit
     ])

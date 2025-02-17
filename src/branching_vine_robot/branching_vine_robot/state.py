@@ -1,9 +1,4 @@
-#!/usr/bin/env python3
-
-import rclpy
-from rclpy.node import Node
 from enum import Enum
-import branching_vine_robot.pneumatics
 
 class States(Enum):
     MANUAL = 0
@@ -11,12 +6,8 @@ class States(Enum):
     MOVE = 2
     BRANCH = 3
 
-class StateMachine(Node):
+class StateMachine():
     def __init__(self):
-        super().__init__('state_node') 
-
-        self.state_timer = self.create_timer(0, self.state_callback)
-      
         self.state_map = {
             States.MANUAL: self.manual_state,
             States.STOP: self.stop_state,
@@ -45,17 +36,3 @@ class StateMachine(Node):
     def state_callback(self):
         ...
         # self.state_map[self.state]()
-
-def main(args=None):
-    rclpy.init(args=args)
-    state = StateMachine()
-    
-    try:
-        rclpy.spin(state)
-    except KeyboardInterrupt:
-        state.get_logger().info("State machine node shutting down")
-    finally:
-        state.destroy_node()
-    
-if __name__ == "__main__":
-    main()

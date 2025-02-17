@@ -22,11 +22,10 @@ setup(
     tests_require=["pytest"],
     entry_points={ # All scripts that run standalone should be here if run through the launch file
         'console_scripts': [
-            'state = branching_vine_robot.state:main',
+            'control = branching_vine_robot.control:main',
             'server = branching_vine_robot.server:main',
-            'cluster = branching_vine_robot.cluster:main',
             'gui = branching_vine_robot.gui:main',
-            'pneumatics = branching_vine_robot.pneumatics:main'
+            'cluster = branching_vine_robot.clustering.clusterV4:main'
         ],
     }
 )

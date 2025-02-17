@@ -11,6 +11,7 @@ find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(builtin_interfaces REQUIRED)
 
+# Generate custom ROS interfaces for more concise messages
 rosidl_generate_interfaces(${PROJECT_NAME}
     "msg/Clusters.msg"
     "msg/Goal.msg"

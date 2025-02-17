@@ -10,7 +10,6 @@ sudo apt update && sudo apt upgrade -y
 # Install all necessary Debian/ROS packages
 sudo apt -y install \
 ros-humble-librealsense2* \
-ros-humble-gazebo-ros-pkgs \
 ros-humble-cv-bridge
 
 # Install Python dependencies as defined in the requirements.txt

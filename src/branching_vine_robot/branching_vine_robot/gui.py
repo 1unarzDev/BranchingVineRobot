@@ -2,7 +2,6 @@
 
 import rclpy
 from rclpy.node import Node
-import branching_vine_robot.config as config
 from interfaces.msg import Clusters, Goal
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
@@ -12,7 +11,6 @@ os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame
 from enum import Enum
 import numpy as np
-import random
 import cv2
 
 # Constants
@@ -26,13 +24,10 @@ SCREEN_HEIGHT = 720
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
 class InteractState(Enum):
-    PATH = 0
-    PAN = 1
-    ROTATE = 2
+    PLOT = 0
 
 class Tabs(Enum):
-    TWO_DIM = 0
-    THREE_DIM = 1 
+    PATH = 0
 
 class GUI(Node):
     def __init__(self):
@@ -55,12 +50,12 @@ class GUI(Node):
         self.centroids_x, self.centroids_y = np.array([]), np.array([])
 
         self.tab = 0
-        self.action = InteractState.PAN
+        self.action = InteractState.PLOT
 
         pygame.init()
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         self.font = pygame.font.SysFont(FONT, FONT_SIZE)
-        self.text = "Test"
+        self.text = ""
 
     def depth_callback(self, msg):
         # Convert ROS Image message to NumPy array
@@ -93,7 +88,6 @@ class GUI(Node):
         self.sizes = msg.sizes
 
     def display(self):
-        # Event handler, TODO: incorporate different functionality for each tab
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_2:
