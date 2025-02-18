@@ -1,4 +1,4 @@
-# Branchign Vine Robots
+# Branching Vine Robots
 
 This repository contains the code for an ongoing project aimed at creating autonomous branching vine robots (BVRs) for navigating complex environments. The current architecture utilizes a network of ROS2 nodes, which ultimately communicate with a state machine that controls motor outputs. In order to determine the best possible path and when to branch, clusters of points within a calculated depth threhold are clustered by using the Scikit-Learn implementation of DBSCAN. 
 
