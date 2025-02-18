@@ -10,8 +10,8 @@ DIST_THRESHOLD = 5000 # mm DEPRECATED
 
 """ MEASURED """ 
 CAMERA_CONFIG = [
-    {'namespace': 'branch1', 'serial_no': '141722075260'},
-    {'namespace': 'branch2', 'serial_no': '145422071210'},
+    {'namespace': 'branch1', 'serial_no': '_141722075260'},
+    {'namespace': 'branch2', 'serial_no': '_145422071210'},
 ]
 
 MAX_TIP_SPEED = ... # m/s
