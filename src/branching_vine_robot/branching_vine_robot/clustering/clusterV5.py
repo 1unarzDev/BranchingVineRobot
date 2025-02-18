@@ -14,11 +14,11 @@ class Cluster(Node):
         super().__init__('cluster_node')
         
         self.cluster_publisher = self.create_publisher(
-            Clusters, "/depth/clusters", 10
+            Clusters, "depth/clusters", 10
         )
     
         self.depth_subscriber = self.create_subscription(
-            Image, '/camera/camera/depth/image_rect_raw', self.depth_callback, 10
+            Image, 'camera/camera/depth/image_rect_raw', self.depth_callback, 10
         )
         
         self.bridge = CvBridge()
@@ -39,7 +39,7 @@ class Cluster(Node):
         xy_points = points[:, :2]  
     
         # Run DBSCAN
-        dbscan = DBSCAN(eps=10, min_samples=1000)
+        dbscan = DBSCAN(eps=30, min_samples=100)
         labels = dbscan.fit_predict(xy_points)
         
         # Extract unique cluster labels (ignore noise, labeled as -1)
@@ -60,6 +60,8 @@ class Cluster(Node):
             clusters_msg.sizes = np.array([np.sum(labels == label) for label in unique_labels], dtype=np.uint32).tolist()
             self.cluster_publisher.publish(clusters_msg)
             self.get_logger().info(f"Published points - x: {clusters_msg.x}, y: {clusters_msg.y}, z: {clusters_msg.z}, sizes: {clusters_msg.sizes}")
+        else:
+            self.get_logger().info("No clusters found")
 
 def main(args=None):
     rclpy.init(args=args)

@@ -60,15 +60,15 @@ class GUI(Node):
         super().__init__("gui_node")
         
         self.goal_publisher = self.create_publisher(
-            Goal, "/control/goal", 10
+            Goal, "control/goal", 10
         )
 
         self.cluster_subscriber = self.create_subscription(
-            Clusters, "/depth/clusters", self.cluster_callback, 10
+            Clusters, "depth/clusters", self.cluster_callback, 10
         )
         
         self.depth_subscriber = self.create_subscription(
-            Image, '/camera/camera/depth/image_rect_raw', self.depth_callback, 10
+            Image, 'camera/camera/depth/image_rect_raw', self.depth_callback, 10
         )
         
         self.bridge = CvBridge()

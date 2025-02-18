@@ -30,11 +30,11 @@ class Control(Node):
         super().__init__("cluster_node")
     
         self.goal_subscriber = self.create_subscription(
-            Goal, "/control/goals", self.goal_callback, 10
+            Goal, "control/goals", self.goal_callback, 10
         )
         
         self.info_subscriber = self.create_subscription(
-            CameraInfo, '/camera/camera/depth/camera_info', self.camera_info_callback, 10
+            CameraInfo, 'camera/camera/depth/camera_info', self.camera_info_callback, 10
         )
 
         self.fx = self.fy = self.cx = self.cy = None  # Camera intrinsics
