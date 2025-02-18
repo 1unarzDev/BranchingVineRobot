@@ -1,3 +1,5 @@
+## PlatformIO Linux Error
+
 If you ever have issues communicating with USBs in PlatformIO on Ubuntu devices, run the following commands to see what may be the issue:
 
 ```bash
@@ -19,4 +21,29 @@ ps aux | grep brltty
 sudo apt remove --purge brltty
 sudo systemctl disable brltty
 sudo systemctl stop brltty
+```
+
+## Useful Debugging Commands
+
+Find the serial numbers and information of your USB devices.
+```bash 
+rs-enumerate-devices
+```
+
+List all available serial devices.
+```bash
+lsusb
+```
+
+Useful packet tracing software.
+```bash
+sudo apt install wireshark
+sudo wireshark
+```
+
+Disable firewall
+```bash
+sudo ufw status # Check firewall status
+sudo systemctl stop ufw # Disable firewall
+sudo ufw disable # Disable firewall at startup
 ```

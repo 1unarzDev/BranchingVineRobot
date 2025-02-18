@@ -9,6 +9,11 @@ CAM_FPS = 30 # frames/s
 DIST_THRESHOLD = 5000 # mm DEPRECATED
 
 """ MEASURED """ 
+CAMERA_CONFIG = [
+    {'namespace': 'branch1', 'serial_no': '141722075260'},
+    {'namespace': 'branch2', 'serial_no': '145422071210'},
+]
+
 MAX_TIP_SPEED = ... # m/s
 APPROX_ACTUATOR_SPEED_TO_ANGLE = ... # Approximation for the ratio of the speed of the spool rotation to the change in angle
 LOOKAHEAD_DIST = 0.1 # m

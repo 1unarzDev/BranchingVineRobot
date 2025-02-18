@@ -3,7 +3,7 @@
 import rclpy
 from rclpy.node import Node
 from interfaces.msg import Goal
-from sensor_msgs.msg import Image, CameraInfo
+from sensor_msgs.msg import CameraInfo
 from cv_bridge import CvBridge
 
 from branching_vine_robot.config import LOOKAHEAD_DIST
